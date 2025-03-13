@@ -54,14 +54,14 @@ pipeline {
                 script {
                     if (env.BRANCH_NAME == 'main') {
                         echo "Building all services after merge..."
-                        sh "mvn clean verify"
+                        sh "mvn clean verify org.jacoco:jacoco-maven-plugin:0.8.8:prepare-agent org.jacoco:jacoco-maven-plugin:0.8.8:report"
                     } else if (AFFECTED_SERVICES?.trim()) {
                         def affectedServices = AFFECTED_SERVICES.split(',')
                         for (service in affectedServices) {
                             echo "Building ${service}..."
                             sh """
                                 cd ${service}
-                                mvn clean verify
+                                mvn clean verify org.jacoco:jacoco-maven-plugin:0.8.8:prepare-agent org.jacoco:jacoco-maven-plugin:0.8.8:report
                             """
                         }
                     } else {
@@ -86,15 +86,24 @@ pipeline {
                     def coveragePath = "${service}/target/jacoco.exec"
                     
                   
-                    if (fileExists(testResultPath)) {
-                        junit testResultPath
+                    def testResults = findFiles(glob: testResultPath)
+                    if (testResults.length > 0) {
+                        junit testResults[0].path
                     } else {
                         echo "No test results found for ${service}, skipping JUnit report."
                     }
+                        
+                    // if (fileExists(testResultPath)) {
+                    //     junit testResultPath
+                    // } else {
+                    //     echo "No test results found for ${service}, skipping JUnit report."
+                    // }
                     
                   
                     if (fileExists(coveragePath)) {
                         jacoco execPattern: coveragePath
+                               classPattern: "${service}/target/classes", 
+                               sourcePattern: "${service}/src/main/java"
                     } else {
                         echo "No JaCoCo coverage report found for ${service}, skipping coverage report."
                     }
