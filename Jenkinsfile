@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         AFFECTED_SERVICES = ""
-        BRANCH_NAME = ""
+        // BRANCH_NAME = ""
     }
 
     stages {
@@ -18,6 +18,7 @@ pipeline {
                     // env.BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                     // env.BRANCH_NAME = env.GIT_BRANCH
                     echo "Current Branch: ${env.BRANCH_NAME}"
+                    echo "Current Branch: ${env.GIT_BRANCH}"
                 }
             }
         }
