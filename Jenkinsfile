@@ -33,6 +33,7 @@ pipeline {
                     def services = sh(script: "ls -d spring-petclinic*/ | cut -f1 -d'/'", returnStdout: true).trim().split("\n")
                 
                     def changedFiles = sh(script: "git diff --name-only HEAD^ HEAD", returnStdout: true).trim().split("\n")
+                        echo "Changed Files: ${changedFiles}"
                     // def changedFiles = sh(script: 'git diff --name-only origin/main', returnStdout: true).trim().split("\n")
                     def affectedServices = []
 
