@@ -18,7 +18,7 @@ pipeline {
                     // env.BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                     // env.BRANCH_NAME = env.GIT_BRANCH
                     echo "Current Branch: ${env.BRANCH_NAME}"
-                    echo "Current Branch: ${env.GIT_BRANCH}"
+                    echo "Current git Branch: ${env.GIT_BRANCH}"
                 }
             }
         }
@@ -29,8 +29,11 @@ pipeline {
             }
             steps {
                 script {
+                    // sh 'git fetch origin main'
                     def services = sh(script: "ls -d spring-petclinic*/ | cut -f1 -d'/'", returnStdout: true).trim().split("\n")
-                    def changedFiles = sh(script: 'git diff --name-only origin/main', returnStdout: true).trim().split("\n")
+                
+                    def changedFiles = sh(script: "git diff --name-only HEAD^ HEAD", returnStdout: true).trim().split("\n")
+                    // def changedFiles = sh(script: 'git diff --name-only origin/main', returnStdout: true).trim().split("\n")
                     def affectedServices = []
 
                     for (file in changedFiles) {
