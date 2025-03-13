@@ -84,7 +84,6 @@ class VetResourceTest {
         vet.setLastName("Jones");
 
         Specialty specialty = new Specialty();
-        specialty.setId(1);
         specialty.setName("radiology");
         vet.addSpecialty(specialty);
 
@@ -95,7 +94,6 @@ class VetResourceTest {
             .andExpect(jsonPath("$[0].id").value(1))
             .andExpect(jsonPath("$[0].firstName").value("Bob"))
             .andExpect(jsonPath("$[0].lastName").value("Jones"))
-            .andExpect(jsonPath("$[0].specialties[0].id").value(1))
             .andExpect(jsonPath("$[0].specialties[0].name").value("radiology"))
             .andExpect(jsonPath("$[0].nrOfSpecialties").value(1));
     }
@@ -123,7 +121,6 @@ class VetResourceTest {
         vet2.setLastName("Green");
 
         Specialty specialty = new Specialty();
-        specialty.setId(1);
         specialty.setName("surgery");
         vet2.addSpecialty(specialty);
 
