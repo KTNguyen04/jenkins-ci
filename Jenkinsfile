@@ -101,7 +101,7 @@ pipeline {
                     
                   
                     if (fileExists(coveragePath)) {
-                        jacoco execPattern: coveragePath
+                        jacoco execPattern: coveragePath,
                                classPattern: "${service}/target/classes", 
                                sourcePattern: "${service}/src/main/java"
                     } else {
