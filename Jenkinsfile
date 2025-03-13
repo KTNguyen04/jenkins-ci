@@ -105,6 +105,7 @@ pipeline {
                                classPattern: "${service}/target/classes", 
                                sourcePattern: "${service}/src/main/java",
                                minimumInstructionCoverage: '70',
+                               maximumInstructionCoverage: '70',
                                changeBuildStatus: true
                     } else {
                         echo "No JaCoCo coverage report found for ${service}, skipping coverage report."
