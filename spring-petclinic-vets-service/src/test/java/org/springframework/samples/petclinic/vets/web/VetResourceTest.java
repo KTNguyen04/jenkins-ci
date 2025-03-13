@@ -13,99 +13,131 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.samples.petclinic.vets.model;
+package org.springframework.samples.petclinic.vets.web;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.vets.model.Specialty;
+import org.springframework.samples.petclinic.vets.model.Vet;
+import org.springframework.samples.petclinic.vets.model.VetRepository;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
+import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Arrays.asList;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class VetTest {
+@ExtendWith(SpringExtension.class)
+@WebMvcTest(VetResource.class)
+@ActiveProfiles("test")
+class VetResourceTest {
 
-    private Vet vet;
-    private Specialty specialty1;
-    private Specialty specialty2;
+    @Autowired
+    MockMvc mvc;
 
-    @BeforeEach
-    void setUp() {
-        vet = new Vet();
-        specialty1 = new Specialty();
-        specialty1.setId(1);
-        specialty1.setName("Surgery");
-
-        specialty2 = new Specialty();
-        specialty2.setId(2);
-        specialty2.setName("Dentistry");
-    }
+    @MockBean
+    VetRepository vetRepository;
 
     @Test
-    void testGettersAndSetters() {
-        // Test ID
+    void shouldGetAListOfVets() throws Exception {
+        Vet vet = new Vet();
         vet.setId(1);
-        assertEquals(1, vet.getId());
 
-        // Test First Name
-        vet.setFirstName("John");
-        assertEquals("John", vet.getFirstName());
+        given(vetRepository.findAll()).willReturn(asList(vet));
 
-        // Test Last Name
-        vet.setLastName("Doe");
-        assertEquals("Doe", vet.getLastName());
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1));
     }
 
     @Test
-    void testSpecialtiesInitialization() {
-        // Test that specialties is initialized when null
-        assertNotNull(vet.getSpecialtiesInternal());
-        assertTrue(vet.getSpecialtiesInternal().isEmpty());
+    void shouldGetVetWithFullDetails() throws Exception {
+        Vet vet = new Vet();
+        vet.setId(1);
+        vet.setFirstName("Anna");
+        vet.setLastName("Smith");
+
+        given(vetRepository.findAll()).willReturn(asList(vet));
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("Anna"))
+            .andExpect(jsonPath("$[0].lastName").value("Smith"))
+            .andExpect(jsonPath("$[0].nrOfSpecialties").value(0));
     }
 
     @Test
-    void testAddSpecialty() {
-        // Test adding a single specialty
-        vet.addSpecialty(specialty1);
-        assertEquals(1, vet.getNrOfSpecialties());
-        assertTrue(vet.getSpecialtiesInternal().contains(specialty1));
+    void shouldGetVetWithSpecialty() throws Exception {
+        Vet vet = new Vet();
+        vet.setId(1);
+        vet.setFirstName("Bob");
+        vet.setLastName("Jones");
+
+        Specialty specialty = new Specialty();
+        specialty.setId(1);
+        specialty.setName("radiology");
+        vet.addSpecialty(specialty);
+
+        given(vetRepository.findAll()).willReturn(asList(vet));
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("Bob"))
+            .andExpect(jsonPath("$[0].lastName").value("Jones"))
+            .andExpect(jsonPath("$[0].specialties[0].id").value(1))
+            .andExpect(jsonPath("$[0].specialties[0].name").value("radiology"))
+            .andExpect(jsonPath("$[0].nrOfSpecialties").value(1));
     }
 
     @Test
-    void testGetSpecialtiesSorted() {
-        // Test that specialties are returned sorted by name
-        vet.addSpecialty(specialty2); // Dentistry
-        vet.addSpecialty(specialty1); // Surgery
-        
-        List<Specialty> specialties = vet.getSpecialties();
-        assertEquals(2, specialties.size());
-        assertEquals("Dentistry", specialties.get(0).getName()); // Should come first alphabetically
-        assertEquals("Surgery", specialties.get(1).getName());
-        
-        // Test that returned list is unmodifiable
-        assertThrows(UnsupportedOperationException.class, () -> {
-            specialties.add(new Specialty());
-        });
+    void shouldGetEmptyVetList() throws Exception {
+        given(vetRepository.findAll()).willReturn(new ArrayList<>());
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
-    void testGetNrOfSpecialties() {
-        assertEquals(0, vet.getNrOfSpecialties());
-        
-        vet.addSpecialty(specialty1);
-        assertEquals(1, vet.getNrOfSpecialties());
-        
-        vet.addSpecialty(specialty2);
-        assertEquals(2, vet.getNrOfSpecialties());
-    }
+    void shouldGetMultipleVetsWithDifferentDetails() throws Exception {
+        Vet vet1 = new Vet();
+        vet1.setId(1);
+        vet1.setFirstName("Tom");
+        vet1.setLastName("Brown");
 
-    @Test
-    void testSpecialtiesInternalNotNull() {
-        // Test that getSpecialtiesInternal always returns non-null
-        Vet newVet = new Vet();
-        assertNotNull(newVet.getSpecialtiesInternal());
-        
-        // Even after adding specialties
-        newVet.addSpecialty(specialty1);
-        assertNotNull(newVet.getSpecialtiesInternal());
+        Vet vet2 = new Vet();
+        vet2.setId(2);
+        vet2.setFirstName("Lisa");
+        vet2.setLastName("Green");
+
+        Specialty specialty = new Specialty();
+        specialty.setId(1);
+        specialty.setName("surgery");
+        vet2.addSpecialty(specialty);
+
+        given(vetRepository.findAll()).willReturn(asList(vet1, vet2));
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("Tom"))
+            .andExpect(jsonPath("$[0].nrOfSpecialties").value(0))
+            .andExpect(jsonPath("$[1].id").value(2))
+            .andExpect(jsonPath("$[1].firstName").value("Lisa"))
+            .andExpect(jsonPath("$[1].specialties[0].name").value("surgery"))
+            .andExpect(jsonPath("$[1].nrOfSpecialties").value(1));
     }
 }
