@@ -54,14 +54,14 @@ pipeline {
                 script {
                     if (env.BRANCH_NAME == 'main') {
                         echo "Building all services after merge..."
-                        sh "mvn clean package"
+                        sh "mvn clean verify"
                     } else if (AFFECTED_SERVICES?.trim()) {
                         def affectedServices = AFFECTED_SERVICES.split(',')
                         for (service in affectedServices) {
                             echo "Building ${service}..."
                             sh """
                                 cd ${service}
-                                mvn clean package
+                                mvn clean verify
                             """
                         }
                     } else {
@@ -72,25 +72,39 @@ pipeline {
         }
 
         stage('Publish Test Results & Coverage') {
-            steps {
-                script {
-                    if (env.BRANCH_NAME == 'main' || AFFECTED_SERVICES?.trim()) {
-                        def affectedServices = env.BRANCH_NAME == 'main' ? sh(script: "ls -d spring-petclinic*/ | cut -f1 -d'/'", returnStdout: true).trim().split("\n") : AFFECTED_SERVICES.split(',')
-                        
-                        for (service in affectedServices) {
-                            echo "Publishing test results and coverage for ${service}..."
-                            
-                            // Publish JUnit test results
-                            junit "${service}/target/surefire-reports/*.xml"
+    steps {
+        script {
+            if (env.BRANCH_NAME == 'main' || AFFECTED_SERVICES?.trim()) {
+                def affectedServices = env.BRANCH_NAME == 'main' ? 
+                    sh(script: "ls -d spring-petclinic*/ | cut -f1 -d'/'", returnStdout: true).trim().split("\n") 
+                    : AFFECTED_SERVICES.split(',')
 
-                            // Publish JaCoCo coverage report
-                            jacoco execPattern: "${service}/target/jacoco.exec"
-                        }
+                for (service in affectedServices) {
+                    echo "Publishing test results and coverage for ${service}..."
+                    
+                    def testResultPath = "${service}/target/surefire-reports/*.xml"
+                    def coveragePath = "${service}/target/jacoco.exec"
+                    
+                  
+                    if (fileExists(testResultPath)) {
+                        junit testResultPath
                     } else {
-                        echo "No affected services, skipping test result publishing."
+                        echo "No test results found for ${service}, skipping JUnit report."
+                    }
+                    
+                  
+                    if (fileExists(coveragePath)) {
+                        jacoco execPattern: coveragePath
+                    } else {
+                        echo "No JaCoCo coverage report found for ${service}, skipping coverage report."
                     }
                 }
+            } else {
+                echo "No affected services, skipping test result publishing."
             }
         }
+    }
+}
+
     }
 }
