@@ -31,9 +31,7 @@ pipeline {
                 script {
                     // sh 'git fetch origin main'
                     def services = sh(script: "ls -d spring-petclinic*/ | cut -f1 -d'/'", returnStdout: true).trim().split("\n")
-                
                     def changedFiles = sh(script: "git diff --name-only HEAD^ HEAD", returnStdout: true).trim().split("\n")
-                        echo "Changed Files: ${changedFiles}"
                     // def changedFiles = sh(script: 'git diff --name-only origin/main', returnStdout: true).trim().split("\n")
                     def affectedServices = []
 
@@ -45,8 +43,8 @@ pipeline {
                         }
                     }
 
-                    env.AFFECTED_SERVICES = affectedServices.unique().join(',')
-                    echo "Affected Services: ${env.AFFECTED_SERVICES}"
+                    AFFECTED_SERVICES = affectedServices.unique().join(',')
+                    echo "Affected Services: ${AFFECTED_SERVICES}"
                 }
             }
         }
@@ -57,8 +55,8 @@ pipeline {
                     if (env.BRANCH_NAME == 'main') {
                         echo "Building all services after merge..."
                         sh "mvn clean package"
-                    } else if (env.AFFECTED_SERVICES?.trim()) {
-                        def affectedServices = env.AFFECTED_SERVICES.split(',')
+                    } else if (AFFECTED_SERVICES?.trim()) {
+                        def affectedServices = AFFECTED_SERVICES.split(',')
                         for (service in affectedServices) {
                             echo "Building ${service}..."
                             sh """
@@ -76,8 +74,8 @@ pipeline {
         stage('Publish Test Results & Coverage') {
             steps {
                 script {
-                    if (env.BRANCH_NAME == 'main' || env.AFFECTED_SERVICES?.trim()) {
-                        def affectedServices = env.BRANCH_NAME == 'main' ? sh(script: "ls -d spring-petclinic*/ | cut -f1 -d'/'", returnStdout: true).trim().split("\n") : env.AFFECTED_SERVICES.split(',')
+                    if (env.BRANCH_NAME == 'main' || AFFECTED_SERVICES?.trim()) {
+                        def affectedServices = env.BRANCH_NAME == 'main' ? sh(script: "ls -d spring-petclinic*/ | cut -f1 -d'/'", returnStdout: true).trim().split("\n") : AFFECTED_SERVICES.split(',')
                         
                         for (service in affectedServices) {
                             echo "Publishing test results and coverage for ${service}..."
