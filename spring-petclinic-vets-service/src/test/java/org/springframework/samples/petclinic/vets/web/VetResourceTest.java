@@ -21,11 +21,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.vets.model.Specialty;
 import org.springframework.samples.petclinic.vets.model.Vet;
 import org.springframework.samples.petclinic.vets.model.VetRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Collections;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static org.mockito.BDDMockito.given;
@@ -34,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * @author Maciej Szarlinski
+ * Test class for VetResource.
  */
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(VetResource.class)
@@ -52,12 +56,48 @@ class VetResourceTest {
 
         Vet vet = new Vet();
         vet.setId(1);
+        vet.setFirstName("John");
+        vet.setLastName("Doe");
 
         given(vetRepository.findAll()).willReturn(asList(vet));
 
         mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value(1));
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("John"))
+            .andExpect(jsonPath("$[0].lastName").value("Doe"));
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenNoVets() throws Exception {
+        given(vetRepository.findAll()).willReturn(Collections.emptyList());
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void shouldGetVetWithSpecialties() throws Exception {
+        Vet vet = new Vet();
+        vet.setId(2);
+        vet.setFirstName("Jane");
+        vet.setLastName("Smith");
+
+        Specialty specialty = new Specialty();
+        specialty.setId(1);
+        specialty.setName("Surgery");
+        vet.setSpecialties(List.of(specialty));
+
+        given(vetRepository.findAll()).willReturn(asList(vet));
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(2))
+            .andExpect(jsonPath("$[0].firstName").value("Jane"))
+            .andExpect(jsonPath("$[0].lastName").value("Smith"))
+            .andExpect(jsonPath("$[0].specialties[0].id").value(1))
+            .andExpect(jsonPath("$[0].specialties[0].name").value("Surgery"));
     }
 }
-// goin to add unittest
+
