@@ -16,7 +16,7 @@ pipeline {
             steps {
                 script {
                     // env.BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
-                    env.BRANCH_NAME = env.GIT_BRANCH
+                    // env.BRANCH_NAME = env.GIT_BRANCH
                     echo "Current Branch: ${env.BRANCH_NAME}"
                 }
             }
