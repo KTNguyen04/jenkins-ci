@@ -21,11 +21,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.vets.model.Specialty;
 import org.springframework.samples.petclinic.vets.model.Vet;
 import org.springframework.samples.petclinic.vets.model.VetRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.ArrayList;
 
 import static java.util.Arrays.asList;
 import static org.mockito.BDDMockito.given;
@@ -33,9 +36,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * @author Maciej Szarlinski
- */
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(VetResource.class)
 @ActiveProfiles("test")
@@ -49,7 +49,6 @@ class VetResourceTest {
 
     @Test
     void shouldGetAListOfVets() throws Exception {
-
         Vet vet = new Vet();
         vet.setId(1);
 
@@ -59,5 +58,83 @@ class VetResourceTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(1));
     }
+
+    @Test
+    void shouldGetVetWithFullDetails() throws Exception {
+        Vet vet = new Vet();
+        vet.setId(1);
+        vet.setFirstName("Anna");
+        vet.setLastName("Smith");
+
+        given(vetRepository.findAll()).willReturn(asList(vet));
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("Anna"))
+            .andExpect(jsonPath("$[0].lastName").value("Smith"))
+            .andExpect(jsonPath("$[0].nrOfSpecialties").value(0));
+    }
+
+    @Test
+    void shouldGetVetWithSpecialty() throws Exception {
+        Vet vet = new Vet();
+        vet.setId(1);
+        vet.setFirstName("Bob");
+        vet.setLastName("Jones");
+
+        Specialty specialty = new Specialty();
+        specialty.setName("radiology");
+        vet.addSpecialty(specialty);
+
+        given(vetRepository.findAll()).willReturn(asList(vet));
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("Bob"))
+            .andExpect(jsonPath("$[0].lastName").value("Jones"))
+            .andExpect(jsonPath("$[0].specialties[0].name").value("radiology"))
+            .andExpect(jsonPath("$[0].nrOfSpecialties").value(1));
+    }
+
+    @Test
+    void shouldGetEmptyVetList() throws Exception {
+        given(vetRepository.findAll()).willReturn(new ArrayList<>());
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void shouldGetMultipleVetsWithDifferentDetails() throws Exception {
+        Vet vet1 = new Vet();
+        vet1.setId(1);
+        vet1.setFirstName("Tom");
+        vet1.setLastName("Brown");
+
+        Vet vet2 = new Vet();
+        vet2.setId(2);
+        vet2.setFirstName("Lisa");
+        vet2.setLastName("Green");
+
+        Specialty specialty = new Specialty();
+        specialty.setName("surgery");
+        vet2.addSpecialty(specialty);
+
+        given(vetRepository.findAll()).willReturn(asList(vet1, vet2));
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("Tom"))
+            .andExpect(jsonPath("$[0].nrOfSpecialties").value(0))
+            .andExpect(jsonPath("$[1].id").value(2))
+            .andExpect(jsonPath("$[1].firstName").value("Lisa"))
+            .andExpect(jsonPath("$[1].specialties[0].name").value("surgery"))
+            .andExpect(jsonPath("$[1].nrOfSpecialties").value(1));
+    }
 }
-// ts
